@@ -31,11 +31,12 @@ func main() {
 	}
 	r.Get("/faq", controllers.StaticHandler(tpl))
 
-	tpl, err = views.ParseFS(templates.FS, "signup.html", "tailwind.html")
-	if err != nil {
-		panic(err)
-	}
-	r.Get("/signup", controllers.StaticHandler(tpl))
+	usersC := controllers.Users{}
+	usersC.Templates.New = views.Must(views.ParseFS(
+		templates.FS,
+		"signup.html", "tailwind.html",
+	))
+	r.Get("/signup", usersC.New)
 
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Page not found", http.StatusNotFound)
