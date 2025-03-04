@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/etaseq/lenslocked/controllers"
+	"github.com/etaseq/lenslocked/templates"
 	"github.com/etaseq/lenslocked/views"
 	"github.com/go-chi/chi/v5"
 )
@@ -12,19 +13,19 @@ import (
 func main() {
 	r := chi.NewRouter()
 
-	tpl, err := views.Parse("templates/home.html")
+	tpl, err := views.ParseFS(templates.FS, "home.html")
 	if err != nil {
 		panic(err)
 	}
 	r.Get("/", controllers.StaticHandler(tpl))
 
-	tpl, err = views.Parse("templates/contact.html")
+	tpl, err = views.ParseFS(templates.FS, "contact.html")
 	if err != nil {
 		panic(err)
 	}
 	r.Get("/contact", controllers.StaticHandler(tpl))
 
-	tpl, err = views.Parse("templates/faq.html")
+	tpl, err = views.ParseFS(templates.FS, "faq.html")
 	if err != nil {
 		panic(err)
 	}
