@@ -101,19 +101,36 @@ func main() {
 	//##############################################################
 
 	// Query data with QueryRow
-	id := 2
-	row := db.QueryRow(`
-    SELECT name, email
-    FROM users
-    WHERE id=$1;`, id)
+	//id := 2
+	//row := db.QueryRow(`
+	//  SELECT name, email
+	//  FROM users
+	//  WHERE id=$1;`, id)
 
-	var name, email string
-	err = row.Scan(&name, &email)
-	if err == sql.ErrNoRows {
-		fmt.Println("Error, no rows")
+	//var name, email string
+	//err = row.Scan(&name, &email)
+	//if err == sql.ErrNoRows {
+	//	fmt.Println("Error, no rows")
+	//}
+	//if err != nil {
+	//	panic(err)
+	//}
+	//fmt.Printf("User information: name=%s, email=%s\n", name, email)
+
+	//#################################################################
+
+	// Add some fake orders
+	userID := 1
+
+	for i := 1; i <= 5; i++ {
+		amount := i * 100
+		desc := fmt.Sprintf("Fake order #%d", i)
+		_, err := db.Exec(`
+      INSERT INTO orders(user_id, amount, description)
+      VALUES($1, $2, $3)`, userID, amount, desc)
+		if err != nil {
+			panic(err)
+		}
 	}
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("User information: name=%s, email=%s\n", name, email)
+	fmt.Println("Created fake orders.")
 }
