@@ -17,6 +17,10 @@ func (u Users) New(w http.ResponseWriter, r *http.Request) {
 	var data struct {
 		Email string
 	}
+	// This is essentially checking the "email" field in the request
+	// (from the query string or form data). In the case of a GET
+	// request, the email can only be sent via the query string
+	// (like, /signup?email=something@example.com)
 	data.Email = r.FormValue("email")
 	u.Templates.New.Execute(w, data)
 }

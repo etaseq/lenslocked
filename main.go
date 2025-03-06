@@ -12,7 +12,8 @@ import (
 
 func main() {
 	r := chi.NewRouter()
-
+	// Parse all templates at start up. If you were parsing them every
+	// time a request comes in, it would be much slower.
 	tpl := views.Must(views.ParseFS(templates.FS, "home.html", "tailwind.html"))
 	r.Get("/", controllers.StaticHandler(tpl))
 

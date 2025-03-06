@@ -19,6 +19,10 @@ func Must(t Template, err error) Template {
 	return t
 }
 
+// ParseFS loads & parses templates from an embedded filesystem (fs.FS).
+// This file system is defined in the templates/fs.go.
+// The reason to use fs.FS and embed is that the final Go binary contains
+// everything, which means better performance and security.
 func ParseFS(fs fs.FS, patterns ...string) (Template, error) {
 	tpl, err := template.ParseFS(fs, patterns...)
 	if err != nil {
