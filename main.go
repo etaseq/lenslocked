@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/etaseq/lenslocked/controllers"
+	"github.com/etaseq/lenslocked/models"
 	"github.com/etaseq/lenslocked/templates"
 	"github.com/etaseq/lenslocked/views"
 	"github.com/go-chi/chi/v5"
@@ -23,7 +24,19 @@ func main() {
 	tpl = views.Must(views.ParseFS(templates.FS, "faq.html", "tailwind.html"))
 	r.Get("/faq", controllers.StaticHandler(tpl))
 
-	usersC := controllers.Users{}
+	cfg := models.DefaultPostgresConfig()
+	db, err := models.Open(cfg)
+	if err != nil {
+		panic(err)
+	}
+	defer db.Close()
+	userService := models.UserService{
+		DB: db,
+	}
+
+	usersC := controllers.Users{
+		UserService: &userService,
+	}
 	usersC.Templates.New = views.Must(views.ParseFS(
 		templates.FS,
 		"signup.html", "tailwind.html",

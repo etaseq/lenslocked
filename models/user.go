@@ -37,11 +37,12 @@ func (us *UserService) Create(email, password string) (*User, error) {
 		PasswordHash: passwordHash,
 	}
 
-	// Insert the new user to the database and store the id to user.
+	// Insert the new user to the database and return a *sql.Row.
 	row := us.DB.QueryRow(`
 		INSERT INTO users (email, password_hash)
 		VALUES ($1, $2) RETURNING id`, email, passwordHash)
 
+	// Extract the new user's id and store it to the user.ID field
 	err = row.Scan(&user.ID)
 	if err != nil {
 		return nil, fmt.Errorf("create user: %w", err)

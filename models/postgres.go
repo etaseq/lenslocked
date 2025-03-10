@@ -17,6 +17,9 @@ type PostgresConfig struct {
 }
 
 func (cfg PostgresConfig) String() string {
+	// fmt.Sprintf is used to format a string and return it without
+	// printing it. It works like fmt.Printf, but instead of
+	// displaying the output, it returns the formatted string.
 	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.Database, cfg.SSLMode)
 }

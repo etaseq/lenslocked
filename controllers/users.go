@@ -3,6 +3,8 @@ package controllers
 import (
 	"fmt"
 	"net/http"
+
+	"github.com/etaseq/lenslocked/models"
 )
 
 // the Template type is an interface I define
@@ -11,6 +13,7 @@ type Users struct {
 	Templates struct {
 		New Template
 	}
+	UserService *models.UserService
 }
 
 func (u Users) New(w http.ResponseWriter, r *http.Request) {
@@ -26,8 +29,14 @@ func (u Users) New(w http.ResponseWriter, r *http.Request) {
 }
 
 func (u Users) Create(w http.ResponseWriter, r *http.Request) {
-	// FormValue calls r.ParseForm first so I do not need
-	// to call it separately
-	fmt.Fprint(w, "Email: ", r.FormValue("email"))
-	fmt.Fprint(w, "Password: ", r.FormValue("password"))
+	email := r.FormValue("email")
+	password := r.FormValue("password")
+	user, err := u.UserService.Create(email, password)
+
+	if err != nil {
+		fmt.Println()
+		http.Error(w, "Something went wrong.", http.StatusInternalServerError)
+		return
+	}
+	fmt.Fprintf(w, "User created: %+v", user)
 }
