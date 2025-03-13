@@ -18,7 +18,11 @@ type UserService struct {
 	DB *sql.DB
 }
 
-// Create a new user
+// Create a new user. Notice that I return a *User pointer.
+// In the case of an error, returning a *User allows you to return 
+// nil (which represents "no valid User object") instead of an 
+// empty User object. This gives you a clear signal that the user 
+// creation failed.
 func (us *UserService) Create(email, password string) (*User, error) {
 	// Postgres is case sensitive so convert all email letters
 	// to lower case to prevent duplicate entries.
@@ -49,4 +53,28 @@ func (us *UserService) Create(email, password string) (*User, error) {
 	}
 
 	return &user, err
+}
+
+func (us *UserService) Authenticate(email, password string) (*User, error) {
+	email = strings.ToLower(email)
+
+	user := User{
+		Email: email,
+	}
+
+	row := us.DB.QueryRow(`
+		SELECT id, password_hash
+		FROM users WHERE email=$1`, email)
+
+	err := row.Scan(&user.ID, &user.PasswordHash)
+	if err != nil {
+		return nil, fmt.Errorf("authenticate: %w", err)
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
+	if err != nil {
+		return nil, fmt.Errorf("authenticate: %w", err)
+	}
+
+	return &user, nil
 }

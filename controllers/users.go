@@ -9,6 +9,9 @@ import (
 
 // the Template type is an interface I define
 // in controllers/template.go
+// NOTE: Why I assign a pointer to UserService? models.UserService has
+// pointer receiver methods. This means that these methods are designed
+// to operate on a pointer, so they can modify the original struct data.
 type Users struct {
 	Templates struct {
 		New		 Template
@@ -48,4 +51,21 @@ func (u Users) SignIn(w http.ResponseWriter, r *http.Request) {
 	}
 	data.Email = r.FormValue("email")
 	u.Templates.SignIn.Execute(w, data)
+}
+
+func (u Users) ProcessSignIn(w http.ResponseWriter, r *http.Request) {
+	var data struct {
+		Email		 string
+		Password string
+	}
+	data.Email = r.FormValue("email")
+	data.Password = r.FormValue("password")
+
+	user, err := u.UserService.Authenticate(data.Email, data.Password)
+	if err != nil {
+		fmt.Println()
+		http.Error(w, "Something went wrong.", http.StatusInternalServerError)
+		return
+	}
+	fmt.Fprintf(w, "User authenticated: %+v", user)
 }
