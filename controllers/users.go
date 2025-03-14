@@ -14,7 +14,7 @@ import (
 // to operate on a pointer, so they can modify the original struct data.
 type Users struct {
 	Templates struct {
-		New		 Template
+		New    Template
 		SignIn Template
 	}
 	UserService *models.UserService
@@ -55,7 +55,7 @@ func (u Users) SignIn(w http.ResponseWriter, r *http.Request) {
 
 func (u Users) ProcessSignIn(w http.ResponseWriter, r *http.Request) {
 	var data struct {
-		Email		 string
+		Email    string
 		Password string
 	}
 	data.Email = r.FormValue("email")
@@ -63,9 +63,18 @@ func (u Users) ProcessSignIn(w http.ResponseWriter, r *http.Request) {
 
 	user, err := u.UserService.Authenticate(data.Email, data.Password)
 	if err != nil {
-		fmt.Println()
+		fmt.Println(err)
 		http.Error(w, "Something went wrong.", http.StatusInternalServerError)
 		return
 	}
+
+	// A simple cookie example
+	cookie := http.Cookie{
+		Name:  "email",
+		Value: user.Email,
+		Path:  "/",
+	}
+	http.SetCookie(w, &cookie)
+
 	fmt.Fprintf(w, "User authenticated: %+v", user)
 }

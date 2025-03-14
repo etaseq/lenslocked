@@ -19,9 +19,9 @@ type UserService struct {
 }
 
 // Create a new user. Notice that I return a *User pointer.
-// In the case of an error, returning a *User allows you to return 
-// nil (which represents "no valid User object") instead of an 
-// empty User object. This gives you a clear signal that the user 
+// In the case of an error, returning a *User allows you to return
+// nil (which represents "no valid User object") instead of an
+// empty User object. This gives you a clear signal that the user
 // creation failed.
 func (us *UserService) Create(email, password string) (*User, error) {
 	// Postgres is case sensitive so convert all email letters
@@ -47,6 +47,8 @@ func (us *UserService) Create(email, password string) (*User, error) {
 		VALUES ($1, $2) RETURNING id`, email, passwordHash)
 
 	// Extract the new user's id and store it to the user.ID field
+	// Remember: Go passes arguments by value, so we must pass
+	// pointers to Scan to update the actual memory locations.
 	err = row.Scan(&user.ID)
 	if err != nil {
 		return nil, fmt.Errorf("create user: %w", err)
