@@ -9,6 +9,7 @@ import (
 	"github.com/etaseq/lenslocked/templates"
 	"github.com/etaseq/lenslocked/views"
 	"github.com/go-chi/chi/v5"
+	"github.com/gorilla/csrf"
 )
 
 func main() {
@@ -57,5 +58,22 @@ func main() {
 	})
 
 	fmt.Println("Starting the server on :3000...")
-	http.ListenAndServe(":3000", r)
+
+	csrfKey := "VWNEO674goZGNWpw20t49v0n1984fcCE"
+	csrfMw := csrf.Protect(
+		[]byte(csrfKey),
+		// TODO: Fix this before deploying
+		csrf.Secure(false),
+	)
+
+	http.ListenAndServe(":3000", csrfMw(r))
 }
+
+// Example of a Middleware function like the csrfMw
+//func TimerMiddleware(h http.HandlerFunc) http.HandlerFunc {
+//	return func(w http.ResponseWriter, r *http.Request) {
+//		start := time.Now()
+//		h(w, r)
+//		fmt.Println("Request time:", time.Since(start))
+//	}
+//}
