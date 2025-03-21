@@ -54,13 +54,16 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cookie := http.Cookie{
-		Name:     "session",
-		Value:    session.Token,
-		Path:     "/",
-		HttpOnly: true,
-	}
-	http.SetCookie(w, &cookie)
+	// Replaced this with the my helper setCookie below
+	//cookie := http.Cookie{
+	//	Name:     "session",
+	//	Value:    session.Token,
+	//	Path:     "/",
+	//	HttpOnly: true,
+	//}
+	//http.SetCookie(w, &cookie)
+	setCookie(w, CookieSession, session.Token)
+
 	http.Redirect(w, r, "/users/me", http.StatusFound)
 }
 
@@ -94,27 +97,26 @@ func (u Users) ProcessSignIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cookie := http.Cookie{
-		Name:     "session",
-		Value:    session.Token,
-		Path:     "/",
-		HttpOnly: true,
-	}
-	http.SetCookie(w, &cookie)
+	setCookie(w, CookieSession, session.Token)
 	http.Redirect(w, r, "/users/me", http.StatusFound)
 }
 
 // The goal of this function is to take a web request and print
 // out the current user's information
 func (u Users) CurrentUser(w http.ResponseWriter, r *http.Request) {
-	tokenCookie, err := r.Cookie("session")
+	// Instead of this you can use the readCookie helper which is really
+	// not necessary. Do not do this in your project!
+	//tokenCookie, err := r.Cookie("CookieSession")
+	token, err := readCookie(r, CookieSession)
 	if err != nil {
 		fmt.Println(err)
 		http.Redirect(w, r, "/signin", http.StatusFound)
 		return
 	}
 
-	user, err := u.SessionService.User(tokenCookie.Value)
+	// Change this as well since I am using readCookie helper
+	//user, err := u.SessionService.User(tokenCookie.Value)
+	user, err := u.SessionService.User(token)
 	if err != nil {
 		fmt.Println(err)
 		http.Redirect(w, r, "/signin", http.StatusFound)
