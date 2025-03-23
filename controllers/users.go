@@ -9,9 +9,6 @@ import (
 
 // the Template type is an interface I define
 // in controllers/template.go
-// NOTE: Why I assign a pointer to UserService? models.UserService has
-// pointer receiver methods. This means that these methods are designed
-// to operate on a pointer, so they can modify the original struct data.
 type Users struct {
 	Templates struct {
 		New    Template
@@ -44,8 +41,15 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// I want to create a session and put it in a cookie after I
+	// I want to create a session and put it in a cookie AFTER I
 	// know that the user has been created.
+	// Notice that instead of ((*user).ID) I do (user.ID) although
+	// the user is a pointer returned from models.Create.
+	// In Go when I have pointer to a struct like User, I can access
+	// the fields of that struct using either the pointer or the
+	// struct itself, thanks to automatic dereferencing.
+	// It is perfectly fine to use this as well ((*user).ID) although
+	// the idiomatic approach is (user.ID).
 	session, err := u.SessionService.Create(user.ID)
 	if err != nil {
 		fmt.Println(err)
@@ -54,7 +58,7 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Replaced this with the my helper setCookie below
+	// Replaced this with the helper setCookie below
 	//cookie := http.Cookie{
 	//	Name:     "session",
 	//	Value:    session.Token,
@@ -63,7 +67,6 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 	//}
 	//http.SetCookie(w, &cookie)
 	setCookie(w, CookieSession, session.Token)
-
 	http.Redirect(w, r, "/users/me", http.StatusFound)
 }
 

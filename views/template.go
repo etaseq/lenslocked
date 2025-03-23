@@ -55,6 +55,8 @@ func ParseFS(fs fs.FS, patterns ...string) (Template, error) {
 }
 
 func (t Template) Execute(w http.ResponseWriter, r *http.Request, data interface{}) {
+	// When you call tpl.Execute(), it can modify the internal state of the
+	// template object. Cloning ensures each request gets a fresh copy to work with.
 	tpl, err := t.htmlTpl.Clone()
 	if err != nil {
 		log.Printf("cloning template: %v", err)
@@ -64,6 +66,8 @@ func (t Template) Execute(w http.ResponseWriter, r *http.Request, data interface
 	tpl = tpl.Funcs(
 		template.FuncMap{
 			"csrfField": func() template.HTML {
+				// This is what is returned inside the {{csrfField}}
+				// <input type="hidden" name="_csrf" value="VWNEO674goZGNWpw20t49v0n1984fcCE">
 				return csrf.TemplateField(r)
 			},
 		},
