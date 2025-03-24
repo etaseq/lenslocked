@@ -77,8 +77,31 @@ func (ss *SessionService) Create(userID int) (*Session, error) {
 }
 
 func (ss *SessionService) User(token string) (*User, error) {
-	// TODO: Implement SessionService.User
-	return nil, nil
+	// 1. Hash the session token
+	tokenHash := ss.hash(token)
+
+	// 2. Query for the session with that hash
+	var user User
+	row := ss.DB.QueryRow(`
+		SELECT user_id
+		FROM sessions
+		WHERE token_hash = $1`, tokenHash)
+	err := row.Scan(&user.ID)
+	if err != nil {
+		return nil, fmt.Errorf("user: %w", err)
+	}
+
+	// 3. Using the UserID from the session, query for that User
+	row = ss.DB.QueryRow(`
+		SELECT email, password_hash
+		FROM users WHERE id = $1;`, user.ID)
+	err = row.Scan(&user.Email, &user.PasswordHash)
+	if err != nil {
+		return nil, fmt.Errorf("user: %w", err)
+	}
+
+	// 4. Return the user
+	return &user, nil
 }
 
 // I do hash instead of Hash because I do not want this function
