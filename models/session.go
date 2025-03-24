@@ -50,12 +50,25 @@ func (ss *SessionService) Create(userID int) (*Session, error) {
 		TokenHash: ss.hash(token),
 	}
 
+	// The Create method is also used for Signin so I will need
+	// to be able to update the sessions too.
+	// 1. Try to UPDATE the user's session
+	// 2. If err, create new session
 	row := ss.DB.QueryRow(`
-		INSERT INTO sessions (user_id, token_hash)
-		VALUES ($1, $2)
+		UPDATE sessions
+		SET token_hash = $2
+		WHERE user_id = $1
 		RETURNING id;`, session.UserID, session.TokenHash)
-
 	err = row.Scan(&session.ID)
+
+	if err == sql.ErrNoRows {
+		row = ss.DB.QueryRow(`
+			INSERT INTO sessions (user_id, token_hash)
+			VALUES ($1, $2)
+			RETURNING id;`, session.UserID, session.TokenHash)
+		err = row.Scan(&session.ID)
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("create: %w", err)
 	}

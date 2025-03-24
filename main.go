@@ -63,6 +63,13 @@ func main() {
 
 	fmt.Println("Starting the server on :3000...")
 
+	// When a user first accesses your site, this middleware generates a CSRF
+	// token and stores it in the _gorilla_csrf cookie.
+	// Every time a user submits a form (like signing up or logging in), the
+	// CSRF token needs to be included in the form submission.
+	// This can be done using the csrf.TemplateField(r) function, which
+	// automatically retrieves the CSRF token from the cookie and generates
+	// a hidden input field with it.
 	csrfKey := "VWNEO674goZGNWpw20t49v0n1984fcCE"
 	csrfMw := csrf.Protect(
 		[]byte(csrfKey),
