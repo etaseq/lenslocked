@@ -104,6 +104,21 @@ func (ss *SessionService) User(token string) (*User, error) {
 	return &user, nil
 }
 
+func (ss *SessionService) Delete(token string) error {
+	tokenHash := ss.hash(token)
+
+	// I don't need something to be returned from the query
+	// so I can use Exec.
+	_, err := ss.DB.Exec(`
+		DELETE FROM sessions
+		WHERE token_hash = $1`, tokenHash)
+	if err != nil {
+		return fmt.Errorf("delete: %w", err)
+	}
+
+	return nil
+}
+
 // I do hash instead of Hash because I do not want this function
 // to be used outside of this scope.
 func (ss *SessionService) hash(token string) string {
