@@ -35,3 +35,11 @@ func readCookie(r *http.Request, name string) (string, error) {
 
 	return c.Value, nil
 }
+
+func deleteCookie(w http.ResponseWriter, name string) {
+	// The way we delete a cookie is to override the existing one with
+	// a new cookie, and set its MaxAge field to a value less than 0.
+	cookie := newCookie(name, "")
+	cookie.MaxAge = -1
+	http.SetCookie(w, cookie)
+}
