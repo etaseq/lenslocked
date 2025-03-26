@@ -19,7 +19,7 @@ func Bytes(n int) ([]byte, error) {
 }
 
 // String returns a random string using crypt/rand.
-// n is the number of bytes being used to generate the random stirng.
+// n is the number of bytes being used to generate the random string.
 func String(n int) (string, error) {
 	b, err := Bytes(n)
 	if err != nil {
