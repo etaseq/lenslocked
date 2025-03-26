@@ -54,20 +54,29 @@ func (ss *SessionService) Create(userID int) (*Session, error) {
 	// to be able to update the sessions too.
 	// 1. Try to UPDATE the user's session
 	// 2. If err, create new session
+	//row := ss.DB.QueryRow(`
+	//	UPDATE sessions
+	//	SET token_hash = $2
+	//	WHERE user_id = $1
+	//	RETURNING id;`, session.UserID, session.TokenHash)
+	//err = row.Scan(&session.ID)
+
+	//if err == sql.ErrNoRows {
+	//	row = ss.DB.QueryRow(`
+	//		INSERT INTO sessions (user_id, token_hash)
+	//		VALUES ($1, $2)
+	//		RETURNING id;`, session.UserID, session.TokenHash)
+	//	err = row.Scan(&session.ID)
+	//}
+
+	// Short version of the 1. and 2. using Postgres ON CONFLICT
 	row := ss.DB.QueryRow(`
-		UPDATE sessions
+		INSERT INTO sessions (user_id, token_hash)
+		VALUES ($1, $2) ON CONFLICT (user_id) DO
+		UPDATE
 		SET token_hash = $2
-		WHERE user_id = $1
 		RETURNING id;`, session.UserID, session.TokenHash)
 	err = row.Scan(&session.ID)
-
-	if err == sql.ErrNoRows {
-		row = ss.DB.QueryRow(`
-			INSERT INTO sessions (user_id, token_hash)
-			VALUES ($1, $2)
-			RETURNING id;`, session.UserID, session.TokenHash)
-		err = row.Scan(&session.ID)
-	}
 
 	if err != nil {
 		return nil, fmt.Errorf("create: %w", err)
@@ -100,7 +109,7 @@ func (ss *SessionService) User(token string) (*User, error) {
 	//	return nil, fmt.Errorf("user: %w", err)
 	//}
 
-	// Short version of 2. and 3.
+	// Short version of 2. and 3. using JOIN
 	var user User
 	row := ss.DB.QueryRow(`
 		SELECT users.id,
