@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/etaseq/lenslocked/controllers"
+	"github.com/etaseq/lenslocked/migrations"
 	"github.com/etaseq/lenslocked/models"
 	"github.com/etaseq/lenslocked/templates"
 	"github.com/etaseq/lenslocked/views"
@@ -33,7 +34,7 @@ func main() {
 	defer db.Close()
 
 	// Run the migrations when the application starts up
-	err = models.Migrate(db, "migrations")
+	err = models.MigrateFS(db, migrations.FS, ".")
 	if err != nil {
 		panic(err)
 	}

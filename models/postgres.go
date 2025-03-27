@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql"
 	"fmt"
+	"io/fs"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/pressly/goose/v3"
@@ -61,4 +62,24 @@ func Migrate(db *sql.DB, dir string) error {
 	}
 
 	return nil
+}
+
+func MigrateFS(db *sql.DB, migrationFS fs.FS, dir string) error {
+	if dir == "" {
+		dir = "."
+	}
+
+	goose.SetBaseFS(migrationFS)
+	// - Imagine you’re using an embedded filesystem (migrationFS) to read
+	// migration files from somewhere other than the disk (e.g., from a .zip
+	// or .tar file, or from resources bundled with your app).
+	// - You set goose.SetBaseFS(migrationFS) to make goose use that custom
+	// source for migrations.
+	// - Once the migrations are done, you reset the base filesystem to nil
+	// to avoid future code using the custom filesystem when it's not needed.
+	defer func() {
+		goose.SetBaseFS(nil)
+	}()
+
+	return Migrate(db, dir)
 }
