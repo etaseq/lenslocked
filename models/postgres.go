@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	_ "github.com/jackc/pgx/v4/stdlib"
+	"github.com/pressly/goose/v3"
 )
 
 type PostgresConfig struct {
@@ -46,4 +47,18 @@ func DefaultPostgresConfig() PostgresConfig {
 		Database: "lenslocked",
 		SSLMode:  "disable",
 	}
+}
+
+func Migrate(db *sql.DB, dir string) error {
+	err := goose.SetDialect("postgres")
+	if err != nil {
+		return fmt.Errorf("migrate: %w", err)
+	}
+
+	err = goose.Up(db, dir)
+	if err != nil {
+		return fmt.Errorf("migrate: %w", err)
+	}
+
+	return nil
 }
