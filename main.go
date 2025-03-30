@@ -70,7 +70,10 @@ func main() {
 		http.Error(w, "Page not found", http.StatusNotFound)
 	})
 
-	fmt.Println("Starting the server on :3000...")
+	// Create an instance of User middleware
+	umw := controllers.UserMiddleWare{
+		SessionService: &sessionService,
+	}
 
 	// When a user first accesses your site, this middleware generates a CSRF
 	// token and stores it in the _gorilla_csrf cookie.
@@ -86,14 +89,8 @@ func main() {
 		csrf.Secure(false),
 	)
 
-	http.ListenAndServe(":3000", csrfMw(r))
+	// The csrf middleware will run first, then the umw
+	// and finally the router will kick in
+	fmt.Println("Starting the server on :3000...")
+	http.ListenAndServe(":3000", csrfMw(umw.SetUser(r)))
 }
-
-// Example of a Middleware function like the csrfMw
-//func TimerMiddleware(h http.HandlerFunc) http.HandlerFunc {
-//	return func(w http.ResponseWriter, r *http.Request) {
-//		start := time.Now()
-//		h(w, r)
-//		fmt.Println("Request time:", time.Since(start))
-//	}
-//}

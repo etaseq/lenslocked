@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/etaseq/lenslocked/context"
 	"github.com/etaseq/lenslocked/models"
 )
 
@@ -107,21 +108,9 @@ func (u Users) ProcessSignIn(w http.ResponseWriter, r *http.Request) {
 // The goal of this function is to take a web request and print
 // out the current user's information
 func (u Users) CurrentUser(w http.ResponseWriter, r *http.Request) {
-	// Instead of this you can use the readCookie helper which is really
-	// not necessary. Do not do this in your project!
-	//tokenCookie, err := r.Cookie("CookieSession")
-	token, err := readCookie(r, CookieSession)
-	if err != nil {
-		fmt.Println(err)
-		http.Redirect(w, r, "/signin", http.StatusFound)
-		return
-	}
-
-	// Change this as well since I am using readCookie helper
-	//user, err := u.SessionService.User(tokenCookie.Value)
-	user, err := u.SessionService.User(token)
-	if err != nil {
-		fmt.Println(err)
+	ctx := r.Context()
+	user := context.User(ctx)
+	if user == nil {
 		http.Redirect(w, r, "/signin", http.StatusFound)
 		return
 	}
@@ -146,4 +135,51 @@ func (u Users) ProcessSignOut(w http.ResponseWriter, r *http.Request) {
 	deleteCookie(w, CookieSession)
 	http.Redirect(w, r, "/signin", http.StatusFound)
 
+}
+
+// I am adding the middleware for the users here because the application
+// is small at this point. This is the same reason I added the cookies
+// inside the controllers package.
+// In case I wanted to keep all separated I could rename the controllers
+// package to "handlers" and only include the http handlers in it.
+// Then I would create a separate package called middleware and another
+// one called cookies.
+
+// The SetUser middleware will look up the session token via the user's
+// cookie, it will then query for a valid session using that token and
+// if it finds a user it is going to set it inside of the context and
+// eventually proceed with the next http handler [which is every handler
+// in the app since I wrap the whole router (r) with it. So it is like
+// doing r.Post("/signin", umw.SetUser(usersC.ProcessSignIn)) for each
+// handler].
+// If it will have an issue looking up the cookie or anything else it
+// is going to proceed with the next http handler since this middleware
+// is not designed to restrict access, it is just meant to set the user
+// in the context.
+
+type UserMiddleWare struct {
+	SessionService *models.SessionService
+}
+
+func (umw UserMiddleWare) SetUser(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		token, err := readCookie(r, CookieSession)
+		if err != nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		user, err := umw.SessionService.User(token)
+		if err != nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// if a user has been found, get the Context set the value and
+		// UPDATE THE REQUEST with the new context.
+		ctx := r.Context()
+		ctx = context.WithUser(ctx, user)
+		r = r.WithContext(ctx)
+		next.ServeHTTP(w, r)
+	})
 }
