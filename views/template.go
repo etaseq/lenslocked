@@ -54,6 +54,7 @@ func ParseFS(fs fs.FS, patterns ...string) (Template, error) {
 	if err != nil {
 		return Template{}, fmt.Errorf("parsing template: %w", err)
 	}
+
 	return Template{
 		htmlTpl: tpl,
 	}, nil
@@ -71,6 +72,9 @@ func (t Template) Execute(w http.ResponseWriter, r *http.Request, data interface
 	tpl = tpl.Funcs(
 		template.FuncMap{
 			"csrfField": func() template.HTML {
+				// The csrf.TemplateField(r) looks for the CSRF token that was set in
+				// the cookie (_gorilla_csrf), then it renders that token into
+				// the HTML 'hidden' form.
 				// This is what is returned inside the {{csrfField}}
 				// <input type="hidden" name="_csrf" value="VWNEO674goZGNWpw20t49v0n1984fcCE">
 				return csrf.TemplateField(r)

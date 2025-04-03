@@ -25,8 +25,6 @@ func setCookie(w http.ResponseWriter, name, value string) {
 	http.SetCookie(w, cookie)
 }
 
-// This is really not necessary, I am just following the bastard
-// so that I do not have an issue later in the course
 func readCookie(r *http.Request, name string) (string, error) {
 	c, err := r.Cookie(name)
 	if err != nil {

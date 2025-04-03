@@ -143,11 +143,8 @@ func (u Users) ProcessSignOut(w http.ResponseWriter, r *http.Request) {
 
 // The SetUser middleware will look up the session token via the user's
 // cookie, it will then query for a valid session using that token and
-// if it finds a user it is going to set it inside of the context and
-// eventually proceed with the next http handler [which is every handler
-// in the app since I wrap the whole router (r) with it. So it is like
-// doing r.Post("/signin", umw.SetUser(usersC.ProcessSignIn)) for each
-// handler].
+// if it finds a user, it is going to set it inside of the context and
+// eventually proceed with the "next" http handler.
 // If it will have an issue looking up the cookie or anything else it
 // is going to proceed with the next http handler since this middleware
 // is not designed to restrict access, it is just meant to set the user
@@ -190,6 +187,7 @@ func (umw UserMiddleWare) RequireUser(next http.Handler) http.Handler {
 			return
 		}
 
+		// "next" here will be the usersC.CurrentUser
 		next.ServeHTTP(w, r)
 	})
 }
