@@ -30,7 +30,6 @@ type EmailService struct {
 	// email. This is also used in functions where the email is a predetermined,
 	// like the forgotten password email.
 	DefaultSender string
-
 	// unexported fields
 	// Dialer allows connecting to the email server (e.g Mailtrap) and send emails.
 	dialer *mail.Dialer
