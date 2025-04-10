@@ -137,6 +137,10 @@ func main() {
 		templates.FS,
 		"check-your-email.html", "tailwind.html",
 	))
+	usersC.Templates.ResetPassword = views.Must(views.ParseFS(
+		templates.FS,
+		"reset-pw.html", "tailwind.html",
+	))
 
 	// Set up router and routes
 	r := chi.NewRouter()
@@ -160,6 +164,8 @@ func main() {
 	r.Post("/signout", usersC.ProcessSignOut)
 	r.Get("/forgot-pw", usersC.ForgotPassword)
 	r.Get("/forgot-pw", usersC.ProcessForgotPassword)
+	r.Get("/reset-pw", usersC.ResetPassword)
+	r.Get("/reset-pw", usersC.ProcessResetPassword)
 	r.Route("/users/me", func(r chi.Router) {
 		r.Use(umw.RequireUser)
 		r.Get("/", usersC.CurrentUser)
