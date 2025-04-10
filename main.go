@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"os"
+	"strconv"
 
 	"github.com/etaseq/lenslocked/controllers"
 	"github.com/etaseq/lenslocked/migrations"
@@ -11,12 +13,64 @@ import (
 	"github.com/etaseq/lenslocked/views"
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/csrf"
+	"github.com/joho/godotenv"
 )
 
+type config struct {
+	PSQL models.PostgresConfig
+	SMTP models.SMTPConfig
+	CSRF struct {
+		Key    string
+		Secure bool
+	}
+	Server struct {
+		Address string
+	}
+}
+
+// A function to load ENV variables
+func loadEnvConfig() (config, error) {
+	var cfg config
+
+	err := godotenv.Load()
+	if err != nil {
+		// I am returning cfg because config is not a pointer
+		// so I cannot return nil
+		return cfg, err
+	}
+
+	// TODO: Read the PSQL values from an ENV variable
+	cfg.PSQL = models.DefaultPostgresConfig()
+
+	// TODO: SMTP
+	cfg.SMTP.Host = os.Getenv("SMTP_HOST")
+	// Port needs to be an integer so I need to convert the string to int
+	portStr := os.Getenv("SMTP_PORT")
+	cfg.SMTP.Port, err = strconv.Atoi(portStr)
+	if err != nil {
+		return cfg, err
+	}
+	cfg.SMTP.Username = os.Getenv("SMTP_USERNAME")
+	cfg.SMTP.Password = os.Getenv("SMTP_PASSWORD")
+
+	// TODO: Read the CSRF values from an ENV variable
+	cfg.CSRF.Key = "VWNEO674goZGNWpw20t49v0n1984fcCE"
+	cfg.CSRF.Secure = false
+
+	// TODO: Read the server values from an ENV variable
+	cfg.Server.Address = ":3000"
+
+	return cfg, nil
+}
+
 func main() {
+	cfg, err := loadEnvConfig()
+	if err != nil {
+		panic(err)
+	}
+
 	// Setup the database connection
-	cfg := models.DefaultPostgresConfig()
-	db, err := models.Open(cfg)
+	db, err := models.Open(cfg.PSQL)
 	if err != nil {
 		panic(err)
 	}
@@ -29,16 +83,20 @@ func main() {
 	}
 
 	// Setup services
-	userService := models.UserService{
+	userService := &models.UserService{
 		DB: db,
 	}
-	sessionService := models.SessionService{
+	sessionService := &models.SessionService{
 		DB: db,
 	}
+	pwResetService := &models.PasswordResetService{
+		DB: db,
+	}
+	emailService := models.NewEmailService(cfg.SMTP)
 
 	// Setup middleware
 	umw := controllers.UserMiddleWare{
-		SessionService: &sessionService,
+		SessionService: sessionService,
 	}
 
 	// When a user first accesses your site, this middleware generates a CSRF
@@ -48,17 +106,18 @@ func main() {
 	// This can be done using the csrf.TemplateField(r) function, which
 	// automatically retrieves the CSRF token from the cookie and generates
 	// a hidden input field with it.
-	csrfKey := "VWNEO674goZGNWpw20t49v0n1984fcCE"
 	csrfMw := csrf.Protect(
-		[]byte(csrfKey),
+		[]byte(cfg.CSRF.Key),
 		// TODO: Fix this before deploying
-		csrf.Secure(false),
+		csrf.Secure(cfg.CSRF.Secure),
 	)
 
 	// Setup controllers
 	usersC := controllers.Users{
-		UserService:    &userService,
-		SessionService: &sessionService,
+		UserService:          userService,
+		SessionService:       sessionService,
+		PasswordResetService: pwResetService,
+		EmailService:         emailService,
 	}
 	usersC.Templates.New = views.Must(views.ParseFS(
 		templates.FS,
@@ -107,6 +166,9 @@ func main() {
 	})
 
 	// Start the server
-	fmt.Println("Starting the server on :3000...")
-	http.ListenAndServe(":3000", r)
+	fmt.Printf("Starting the server on %s...\n", cfg.Server.Address)
+	err = http.ListenAndServe(cfg.Server.Address, r)
+	if err != nil {
+		panic(err)
+	}
 }
