@@ -101,7 +101,7 @@ func (service *PasswordResetService) Consume(token string) (*User, error) {
 			users.email,
 			users.password_hash
 		FROM password_resets
-		JOIN users ON users.id = password_resets.users_id
+		JOIN users ON users.id = password_resets.user_id
 		WHERE password_resets.token_hash = $1;`, tokenHash)
 	err := row.Scan(
 		&pwReset.ID, &pwReset.ExpiresAt, &user.ID,
