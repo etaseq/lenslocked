@@ -185,6 +185,7 @@ func (u Users) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	var data struct {
 		Token string
 	}
+	// This is the token from the reset-pw url query
 	data.Token = r.FormValue("token")
 	u.Templates.ResetPassword.Execute(w, r, data)
 }
