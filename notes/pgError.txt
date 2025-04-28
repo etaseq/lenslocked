@@ -1,0 +1,85 @@
+// First, the reason we use *pgconn.PgError instead of the value is for 
+// memory efficiency. Using pointers to types like PgError, allows to 
+// pass around just the memory address, rather than copying the entire 
+// struct every time I use it. 
+// As it is evident here the PgError struct is quite large so it makes
+// sense to pass a pointer.
+
+type PgError struct {
+	Severity         string
+	Code             string
+	Message          string
+	Detail           string
+	Hint             string
+	Position         int32
+	InternalPosition int32
+	InternalQuery    string
+	Where            string
+	SchemaName       string
+	TableName        string
+	ColumnName       string
+	DataTypeName     string
+	ConstraintName   string
+	File             string
+	Line             int32
+	Routine          string
+}
+
+
+In Go, all arguments are passed by value — even pointers.
+
+This means:
+
+- If you pass a pointer variable, the function receives a copy of that pointer 
+  (i.e., a copy of the memory address).
+- To allow the function to modify the original pointer itself 
+  (make it point to something else), you need to pass a pointer to the pointer.
+
+
+Minimal, Clear example using PgError:
+
+package main
+
+import (
+	"errors"
+	"fmt"
+)
+
+// PgError mimics a PostgreSQL error
+type PgError struct {
+	Code string
+}
+
+// Implement the error interface
+func (e *PgError) Error() string {
+	return fmt.Sprintf("PgError: %s", e.Code)
+}
+
+func main() {
+	// Step 1: Create the actual low-level error
+	original := &PgError{Code: "23505"}
+
+	// Step 2: Wrap that error inside another error
+	wrapped := fmt.Errorf("query failed: %w", original)
+
+	// Step 3: We want to detect and extract the PgError
+	var pgErr *PgError // This will be filled if found
+
+	// Step 4: Use errors.As to check and assign
+	if errors.As(wrapped, &pgErr) {
+		fmt.Println("Matched PgError!")
+		fmt.Println("Extracted code:", pgErr.Code)
+	} else {
+		fmt.Println("No PgError found.")
+	}
+}
+  
+
+Step by Step what happens in the code:
+
+Line | What's Happening
+original := &PgError{...} | Create a *PgError with code "23505"
+wrapped := fmt.Errorf("... %w", original) | Wrap the original error inside another one
+var pgErr *PgError | Create a pointer variable (currently nil) to hold the result
+errors.As(wrapped, &pgErr) | Search wrapped (and any errors inside it) for a *PgError If found, assign it to pgErr
+pgErr.Code | Safe to access now, because pgErr points to the real error
