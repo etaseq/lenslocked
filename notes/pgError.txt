@@ -48,6 +48,7 @@ import (
 // PgError mimics a PostgreSQL error
 type PgError struct {
 	Code string
+	...
 }
 
 // Implement the error interface
@@ -65,7 +66,15 @@ func main() {
 	// Step 3: We want to detect and extract the PgError
 	var pgErr *PgError // This will be filled if found
 
-	// Step 4: Use errors.As to check and assign
+	// Step 4: Use errors.As to check and assign.
+	#######################################################################
+	# errors.As is a method just any other method, and in order to be     # 
+	# able to modify a variable that receives (regardless of whether      #
+	# it is a pointer variable or a normal variable. REMEMBER: A POINTER  #
+	# IS JUST A VARIABLE THAT HOLDS AN ADDRESS FOR VALUE), it needs to    # 
+	# receive a pointer to that variable.				      #
+	# In the end the errors.As() returns a bool.
+	#######################################################################
 	if errors.As(wrapped, &pgErr) {
 		fmt.Println("Matched PgError!")
 		fmt.Println("Extracted code:", pgErr.Code)

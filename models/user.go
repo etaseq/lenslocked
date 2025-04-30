@@ -59,6 +59,8 @@ func (us *UserService) Create(email, password string) (*User, error) {
 	err = row.Scan(&user.ID)
 	if err != nil {
 		var pgError *pgconn.PgError
+		// Study the notes on pgError.txt in case you need a reminder
+		// on the double pointer.
 		if errors.As(err, &pgError) {
 			if pgError.Code == pgerrcode.UniqueViolation {
 				return nil, ErrEmailTaken
