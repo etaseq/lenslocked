@@ -1,11 +1,13 @@
 package controllers
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 
 	"github.com/etaseq/lenslocked/context"
+	"github.com/etaseq/lenslocked/errs"
 	"github.com/etaseq/lenslocked/models"
 )
 
@@ -47,6 +49,10 @@ func (u Users) Create(w http.ResponseWriter, r *http.Request) {
 	data.Password = r.FormValue("password")
 	user, err := u.UserService.Create(data.Email, data.Password)
 	if err != nil {
+		if errors.Is(err, models.ErrEmailTaken) {
+			err = errs.Public(err, "That email address is already associated "+
+				"with an account.")
+		}
 		u.Templates.New.Execute(w, r, data, err)
 		return
 	}

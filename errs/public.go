@@ -1,4 +1,4 @@
-package errors
+package errs
 
 // publicError satisfies both the standard 'error' interface and
 // the custom 'public' interface defined in views/template.go
