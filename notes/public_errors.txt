@@ -1,0 +1,74 @@
+Interfaces in Go are used to define behavior that types can implement. 
+The public interface in your code follows that same principle—it defines 
+a behavior: any type that has a Public() string method satisfies the 
+public interface.
+
+type public interface {
+	Public() string
+}
+
+
+However, the usage context here is subtle and might seem confusing at first. 
+Let’s break it down.
+Where is it used?
+Look at the errMessages function:
+
+func errMessages(errs ...error) []string {
+	var msgs []string
+
+	for _, err := range errs {
+		var pubErr public
+		if errors.As(err, &pubErr) {
+			msgs = append(msgs, pubErr.Public())
+		} else {
+			fmt.Println(err)
+			msgs = append(msgs, "Something went wrong.")
+		}
+	}
+
+	return msgs
+}
+
+Here’s what’s happening:
+    It loops over a list of errors.
+    It checks: “Is this error of a type that implements Public() string?”
+    If so, it calls the Public() method to get a user-friendly error message (as opposed to a developer-facing message).
+    If not, it logs the error and returns a generic error message.
+
+So what's the point of the public interface?
+
+This is a convention used to distinguish between errors that are:
+    Safe to show to users (Public() string)
+    vs.
+    Internal errors meant for logs/developers only
+
+Example usage:
+
+You might define an error like this in your models or errors package:
+
+type PublicError struct {
+	Err error
+	Msg string
+}
+
+func (e PublicError) Error() string {
+	return e.Err.Error()
+}
+
+func (e PublicError) Public() string {
+	return e.Msg
+}
+
+Then you can use it like:
+
+return PublicError{Err: errors.New("email already taken"), Msg: "That email address is already in use."}
+
+This way, your application distinguishes internal messages from user-facing ones, using the interface to signal which is which.
+Summary:
+
+    The public interface isn't misused—it's a targeted design choice.
+
+    It enables selectively surfacing safe, user-friendly error messages.
+
+    It’s an interface used purely for type assertion during error handling.
+
