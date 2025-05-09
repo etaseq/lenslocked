@@ -25,10 +25,10 @@ func (pe publicError) Unwrap() error {
 }
 
 // Public is just a constructor that wraps the original error with
-// a new publicError. When you use this function, you're creating
+// a new publicError. When this function is used, it creates
 // an instance of publicError that holds both the internal error
 // (err) and a public message (msg).
-// This allows you to manage errors in a structured way.
+// This allows to manage errors in a structured way.
 func Public(err error, msg string) error {
 	return publicError{err, msg}
 }
