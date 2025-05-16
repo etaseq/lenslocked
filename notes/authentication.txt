@@ -1,0 +1,27 @@
+AUTHENTICATIN PROCESS IN THE APP
+
+1. If new user -> Create the user in the database     -> return the user
+   If old user -> Authenticate user with his password -> return the user
+
+2. Use the user.ID to create a new session token. Hash the token and
+   put it in the sessions table alongside the user.ID
+   return the session
+
+3. Take the session.Token (not TokenHash) and put it in a cookie.
+
+
+MIDDLEWARE
+
+* umw middleware runs with each request
+
+1. Check if there is a cookie named CookieSession and if it exists retrieve
+   its content which is the session.Token I have stored.
+
+2. Hash the token and search the sessions table for the corresponding user.ID.
+
+3. Based on the user.ID find the user from the users table. (use JOIN)
+   return the user
+
+4. Put the user in a new context
+
+5. Retrieve user from context when needed.
