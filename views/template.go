@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	"path"
 
 	"github.com/etaseq/lenslocked/context"
 	"github.com/etaseq/lenslocked/models"
@@ -35,7 +36,7 @@ func Must(t Template, err error) Template {
 // The reason to use fs.FS and embed is that the final Go binary contains
 // everything, which means better performance and security.
 func ParseFS(fs fs.FS, patterns ...string) (Template, error) {
-	tpl := template.New(patterns[0])
+	tpl := template.New(path.Base(patterns[0]))
 	// This is how to create a template function.
 	// In this case I have created just a placeholder function so that
 	// when the template is parsed doesn't return an error.
@@ -121,9 +122,9 @@ func errMessages(errs ...error) []string {
 
 	for _, err := range errs {
 		var pubErr public
-		// Check if the error (or any error it wraps) is of a type that satisfies 
+		// Check if the error (or any error it wraps) is of a type that satisfies
 		// the 'public' interface by implementing the Public() method.
-		// If this is the case, errors.As() will assign the underlying error to 
+		// If this is the case, errors.As() will assign the underlying error to
 		// pubErr allowing access to the Public() method via pubErr.
 		if errors.As(err, &pubErr) {
 			msgs = append(msgs, pubErr.Public())
