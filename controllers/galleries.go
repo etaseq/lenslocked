@@ -50,6 +50,42 @@ func (g Galleries) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (g Galleries) Edit(w http.ResponseWriter, r *http.Request) {
+	// Get the {id} of the gallery I want to work with.
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusNotFound)
+		return
+	}
+
+	// Query for the gallery to make sure it exists.
+	gallery, err := g.GalleryService.ByID(id)
+	if err != nil {
+		if errors.Is(err, models.ErrNotFound) {
+			http.Error(w, "Gallery not found", http.StatusNotFound)
+			return
+		}
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		return
+	}
+
+	// Authorization. Verify that the user has access to edit the gallery.
+	user := context.User(r.Context())
+	if gallery.UserID != user.ID {
+		http.Error(w, "You are not authorized to edit this gallery", http.
+			StatusForbidden)
+		return
+	}
+
+	var data struct {
+		ID    int
+		Title string
+	}
+	data.ID = gallery.ID
+	data.Title = gallery.Title
+	g.Templates.Edit.Execute(w, r, data)
+}
+
+func (g Galleries) Update(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {
 		http.Error(w, "Invalid ID", http.StatusNotFound)
@@ -73,11 +109,14 @@ func (g Galleries) Edit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var data struct {
-		ID    int
-		Title string
+	// All previous code is the same with Edit. This part just updates
+	// the gallery.
+	gallery.Title = r.FormValue("title")
+	err = g.GalleryService.Update(gallery)
+	if err != nil {
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		return
 	}
-	data.ID = gallery.ID
-	data.Title = gallery.Title
-	g.Templates.Edit.Execute(w, r, data)
+	editPath := fmt.Sprintf("/galleries/%d/edit", gallery.ID)
+	http.Redirect(w, r, editPath, http.StatusFound)
 }
