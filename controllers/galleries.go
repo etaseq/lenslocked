@@ -13,8 +13,9 @@ import (
 
 type Galleries struct {
 	Templates struct {
-		New  Template
-		Edit Template
+		New   Template
+		Edit  Template
+		Index Template
 	}
 	GalleryService *models.GalleryService
 }
@@ -119,4 +120,36 @@ func (g Galleries) Update(w http.ResponseWriter, r *http.Request) {
 	}
 	editPath := fmt.Sprintf("/galleries/%d/edit", gallery.ID)
 	http.Redirect(w, r, editPath, http.StatusFound)
+}
+
+// Render all the galleries of a user.
+func (g Galleries) Index(w http.ResponseWriter, r *http.Request) {
+	// While I could pass the full Gallery model directly to the template,
+	// I'm creating a separate, simpler type specifically for the view.
+	// This makes it clearer what data the template actually needs and
+	// also it allows to modify data from the database if needed.
+	type Gallery struct {
+		ID    int
+		Title string
+	}
+
+	var data struct {
+		Galleries []Gallery
+	}
+
+	user := context.User(r.Context())
+	galleries, err := g.GalleryService.ByUserID(user.ID)
+	if err != nil {
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		return
+	}
+
+	for _, gallery := range galleries {
+		data.Galleries = append(data.Galleries, Gallery{
+			ID:    gallery.ID,
+			Title: gallery.Title,
+		})
+	}
+	g.Templates.Index.Execute(w, r, data)
+
 }
