@@ -161,6 +161,10 @@ func main() {
 		templates.FS,
 		"galleries/index.html", "tailwind.html",
 	))
+	galleriesC.Templates.Show = views.Must(views.ParseFS(
+		templates.FS,
+		"galleries/show.html", "tailwind.html",
+	))
 
 	// Set up router and routes
 	r := chi.NewRouter()
@@ -191,6 +195,7 @@ func main() {
 		r.Get("/", usersC.CurrentUser)
 	})
 	r.Route("/galleries", func(r chi.Router) {
+		r.Get("/{id}", galleriesC.Show) // This route is visible for everyone
 		r.Group(func(r chi.Router) {
 			r.Use(umw.RequireUser)
 			r.Get("/", galleriesC.Index)
