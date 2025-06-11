@@ -154,6 +154,27 @@ func (g Galleries) Index(w http.ResponseWriter, r *http.Request) {
 
 }
 
+func (g Galleries) Delete(w http.ResponseWriter, r *http.Request) {
+	gallery, err := g.galleryByID(w, r)
+	if err != nil {
+		return
+	}
+
+	user := context.User(r.Context())
+	if gallery.UserID != user.ID {
+		http.Error(w, "You are not authorized to edit this gallery", http.
+			StatusForbidden)
+		return
+	}
+
+	err = g.GalleryService.Delete(gallery.ID)
+	if err != nil {
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, "/galleries", http.StatusFound)
+}
+
 // Helper function to avoid minor repetition across Edit, Update, and Show
 // handlers. While the duplication isn't excessive to justify the decision,
 // it improves readability and maintains cleaner handler logic
