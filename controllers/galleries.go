@@ -3,7 +3,6 @@ package controllers
 import (
 	"errors"
 	"fmt"
-	"math/rand"
 	"net/http"
 	"strconv"
 
@@ -58,18 +57,34 @@ func (g Galleries) Show(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// While I could pass the full Gallery model directly to the template,
+	// I'm creating a separate, simpler type specifically for the view.
+	// This makes it clearer what data the template actually needs and
+	// also it allows to modify data from the database if needed.
+	type Image struct {
+		GalleryID int
+		Filename  string
+	}
+
 	var data struct {
 		ID     int
 		Title  string
-		Images []string
+		Images []Image
 	}
 	data.ID = gallery.ID
 	data.Title = gallery.Title
-	// Fake Images for now
-	for i := 0; i < 20; i++ {
-		w, h := rand.Intn(500)+200, rand.Intn(500)+200
-		catImageURL := fmt.Sprintf("https://picsum.photos/%d/%d", w, h)
-		data.Images = append(data.Images, catImageURL)
+
+	images, err := g.GalleryService.Images(gallery.ID)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		return
+	}
+	for _, image := range images {
+		data.Images = append(data.Images, Image{
+			GalleryID: image.GalleryID,
+			Filename:  image.Filename,
+		})
 	}
 	g.Templates.Show.Execute(w, r, data)
 }
