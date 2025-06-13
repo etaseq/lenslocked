@@ -196,6 +196,7 @@ func main() {
 	})
 	r.Route("/galleries", func(r chi.Router) {
 		r.Get("/{id}", galleriesC.Show) // This route is visible for everyone
+		r.Get("/{id}/images/{filename}", galleriesC.Image)
 		r.Group(func(r chi.Router) {
 			r.Use(umw.RequireUser)
 			r.Get("/", galleriesC.Index)

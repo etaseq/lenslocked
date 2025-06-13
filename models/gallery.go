@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"io/fs"
+	"os"
 	"path/filepath"
 	"strings"
 )
@@ -123,6 +125,25 @@ func (service *GalleryService) Delete(id int) error {
 	return nil
 }
 
+// Query for a single image
+func (service *GalleryService) Image(galleryID int, filename string) (Image,
+	error) {
+	imagePath := filepath.Join(service.galleryDir(galleryID), filename)
+	_, err := os.Stat(imagePath)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return Image{}, ErrNotFound
+		}
+		return Image{}, fmt.Errorf("querying for image: %w", err)
+	}
+	return Image{
+		Filename:  filename,
+		GalleryID: galleryID,
+		Path:      imagePath,
+	}, nil
+}
+
+// Query for a set of images
 func (service *GalleryService) Images(galleryID int) ([]Image, error) {
 	// An example of what I need to achieve -> "images/gallery-2/*"
 	globPattern := filepath.Join(service.galleryDir(galleryID), "*")
