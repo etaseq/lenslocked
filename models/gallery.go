@@ -129,8 +129,10 @@ func (service *GalleryService) Delete(id int) error {
 func (service *GalleryService) Image(galleryID int, filename string) (Image,
 	error) {
 	imagePath := filepath.Join(service.galleryDir(galleryID), filename)
+	// Check if the file exists.
 	_, err := os.Stat(imagePath)
 	if err != nil {
+		// fs.ErrNotExist represents the error when a file or directory does not exist
 		if errors.Is(err, fs.ErrNotExist) {
 			return Image{}, ErrNotFound
 		}

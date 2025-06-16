@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/etaseq/lenslocked/context"
@@ -19,6 +20,41 @@ type Galleries struct {
 		Index Template
 	}
 	GalleryService *models.GalleryService
+}
+
+// Render all the galleries of a user.
+func (g Galleries) Index(w http.ResponseWriter, r *http.Request) {
+	// While I could pass the full Gallery model directly to the template,
+	// I'm creating a separate, simpler type specifically for the view.
+	// This makes it clearer what data the template actually needs and
+	// it allows to modify data from the database if needed.
+	// It is also much safer; decoupling the database model from the
+	// view-layer model helps avoid leaking internal state by potentially
+	// exposing important fields to the view.
+	type Gallery struct {
+		ID    int
+		Title string
+	}
+
+	var data struct {
+		Galleries []Gallery
+	}
+
+	user := context.User(r.Context())
+	galleries, err := g.GalleryService.ByUserID(user.ID)
+	if err != nil {
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		return
+	}
+
+	for _, gallery := range galleries {
+		data.Galleries = append(data.Galleries, Gallery{
+			ID:    gallery.ID,
+			Title: gallery.Title,
+		})
+	}
+	g.Templates.Index.Execute(w, r, data)
+
 }
 
 func (g Galleries) New(w http.ResponseWriter, r *http.Request) {
@@ -49,44 +85,6 @@ func (g Galleries) Create(w http.ResponseWriter, r *http.Request) {
 
 	editPath := fmt.Sprintf("/galleries/%d/edit", gallery.ID)
 	http.Redirect(w, r, editPath, http.StatusFound)
-}
-
-func (g Galleries) Show(w http.ResponseWriter, r *http.Request) {
-	gallery, err := g.galleryByID(w, r)
-	if err != nil {
-		return
-	}
-
-	// While I could pass the full Gallery model directly to the template,
-	// I'm creating a separate, simpler type specifically for the view.
-	// This makes it clearer what data the template actually needs and
-	// also it allows to modify data from the database if needed.
-	type Image struct {
-		GalleryID int
-		Filename  string
-	}
-
-	var data struct {
-		ID     int
-		Title  string
-		Images []Image
-	}
-	data.ID = gallery.ID
-	data.Title = gallery.Title
-
-	images, err := g.GalleryService.Images(gallery.ID)
-	if err != nil {
-		fmt.Println(err)
-		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		return
-	}
-	for _, image := range images {
-		data.Images = append(data.Images, Image{
-			GalleryID: image.GalleryID,
-			Filename:  image.Filename,
-		})
-	}
-	g.Templates.Show.Execute(w, r, data)
 }
 
 func (g Galleries) Edit(w http.ResponseWriter, r *http.Request) {
@@ -137,38 +135,6 @@ func (g Galleries) Update(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, editPath, http.StatusFound)
 }
 
-// Render all the galleries of a user.
-func (g Galleries) Index(w http.ResponseWriter, r *http.Request) {
-	// While I could pass the full Gallery model directly to the template,
-	// I'm creating a separate, simpler type specifically for the view.
-	// This makes it clearer what data the template actually needs and
-	// also it allows to modify data from the database if needed.
-	type Gallery struct {
-		ID    int
-		Title string
-	}
-
-	var data struct {
-		Galleries []Gallery
-	}
-
-	user := context.User(r.Context())
-	galleries, err := g.GalleryService.ByUserID(user.ID)
-	if err != nil {
-		http.Error(w, "Something went wrong", http.StatusInternalServerError)
-		return
-	}
-
-	for _, gallery := range galleries {
-		data.Galleries = append(data.Galleries, Gallery{
-			ID:    gallery.ID,
-			Title: gallery.Title,
-		})
-	}
-	g.Templates.Index.Execute(w, r, data)
-
-}
-
 func (g Galleries) Delete(w http.ResponseWriter, r *http.Request) {
 	gallery, err := g.galleryByID(w, r)
 	if err != nil {
@@ -188,6 +154,46 @@ func (g Galleries) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, "/galleries", http.StatusFound)
+}
+
+func (g Galleries) Show(w http.ResponseWriter, r *http.Request) {
+	gallery, err := g.galleryByID(w, r)
+	if err != nil {
+		return
+	}
+
+	// While I could pass the full Image model directly to the template,
+	// I'm creating a separate, simpler type specifically for the view.
+	// This makes it clearer what data the template actually needs and
+	// also it allows to modify data from the database if needed.
+	type Image struct {
+		GalleryID       int
+		Filename        string
+		FilenameEscaped string
+	}
+
+	var data struct {
+		ID     int
+		Title  string
+		Images []Image
+	}
+	data.ID = gallery.ID
+	data.Title = gallery.Title
+
+	images, err := g.GalleryService.Images(gallery.ID)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		return
+	}
+	for _, image := range images {
+		data.Images = append(data.Images, Image{
+			GalleryID:       image.GalleryID,
+			Filename:        image.Filename,
+			FilenameEscaped: url.PathEscape(image.Filename),
+		})
+	}
+	g.Templates.Show.Execute(w, r, data)
 }
 
 func (g Galleries) Image(w http.ResponseWriter, r *http.Request) {
@@ -212,9 +218,9 @@ func (g Galleries) Image(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, image.Path)
 }
 
-// Helper function to avoid minor repetition across Edit, Update, and Show
-// handlers. While the duplication isn't excessive to justify the decision,
-// it improves readability and maintains cleaner handler logic
+// Helper function to avoid minor repetition across Edit, Update, Show and
+// Delete handlers. While the duplication isn't excessive to justify the
+// decision, it improves readability and maintains cleaner handler logic.
 func (g Galleries) galleryByID(w http.ResponseWriter, r *http.Request) (
 	*models.Gallery, error) {
 	// Get the {id} of the gallery I want to work with.
