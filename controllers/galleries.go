@@ -93,20 +93,33 @@ func (g Galleries) Edit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Authorization. Verify that the user has access to edit the gallery.
-	user := context.User(r.Context())
-	if gallery.UserID != user.ID {
-		http.Error(w, "You are not authorized to edit this gallery", http.
-			StatusForbidden)
-		return
+	type Image struct {
+		GalleryID       int
+		Filename        string
+		FilenameEscaped string
 	}
 
 	var data struct {
-		ID    int
-		Title string
+		ID     int
+		Title  string
+		Images []Image
 	}
 	data.ID = gallery.ID
 	data.Title = gallery.Title
+
+	images, err := g.GalleryService.Images(gallery.ID)
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		return
+	}
+	for _, image := range images {
+		data.Images = append(data.Images, Image{
+			GalleryID:       image.GalleryID,
+			Filename:        image.Filename,
+			FilenameEscaped: url.PathEscape(image.Filename),
+		})
+	}
 	g.Templates.Edit.Execute(w, r, data)
 }
 
