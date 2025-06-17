@@ -125,26 +125,6 @@ func (service *GalleryService) Delete(id int) error {
 	return nil
 }
 
-// Query for a single image
-func (service *GalleryService) Image(galleryID int, filename string) (Image,
-	error) {
-	imagePath := filepath.Join(service.galleryDir(galleryID), filename)
-	// Check if the file exists.
-	_, err := os.Stat(imagePath)
-	if err != nil {
-		// fs.ErrNotExist represents the error when a file or directory does not exist
-		if errors.Is(err, fs.ErrNotExist) {
-			return Image{}, ErrNotFound
-		}
-		return Image{}, fmt.Errorf("querying for image: %w", err)
-	}
-	return Image{
-		Filename:  filename,
-		GalleryID: galleryID,
-		Path:      imagePath,
-	}, nil
-}
-
 // Query for a set of images
 func (service *GalleryService) Images(galleryID int) ([]Image, error) {
 	// An example of what I need to achieve -> "images/gallery-2/*"
@@ -168,6 +148,39 @@ func (service *GalleryService) Images(galleryID int) ([]Image, error) {
 		}
 	}
 	return images, nil
+}
+
+// Query for a single image
+func (service *GalleryService) Image(galleryID int, filename string) (Image,
+	error) {
+	imagePath := filepath.Join(service.galleryDir(galleryID), filename)
+	// Check if the file exists.
+	_, err := os.Stat(imagePath)
+	if err != nil {
+		// fs.ErrNotExist represents the error when a file or directory does not exist
+		if errors.Is(err, fs.ErrNotExist) {
+			return Image{}, ErrNotFound
+		}
+		return Image{}, fmt.Errorf("querying for image: %w", err)
+	}
+	return Image{
+		Filename:  filename,
+		GalleryID: galleryID,
+		Path:      imagePath,
+	}, nil
+}
+
+func (service *GalleryService) DeleteImage(galleryID int, filename string) error {
+	image, err := service.Image(galleryID, filename)
+	if err != nil {
+		return fmt.Errorf("deleting image: %w", err)
+	}
+
+	err = os.Remove(image.Path)
+	if err != nil {
+		return fmt.Errorf("deleting image: %w", err)
+	}
+	return nil
 }
 
 // galleryDir returns the filesystem path to the directory where

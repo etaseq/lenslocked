@@ -88,15 +88,22 @@ func (g Galleries) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (g Galleries) Edit(w http.ResponseWriter, r *http.Request) {
-	// All the code below is the same as in the Show handler
-	// apart from the Execute part.
 	gallery, err := g.galleryByID(w, r)
 	if err != nil {
 		return
 	}
 
+	// Authorize
+	user := context.User(r.Context())
+	if gallery.UserID != user.ID {
+		http.Error(w, "You are not authorized to edit this gallery", http.
+			StatusForbidden)
+		return
+	}
+
 	// While I could pass the full Image model directly to the template,
 	// I'm creating a separate, simpler type specifically for the view.
+	// All the code below is the same as in the Show handler.
 	type Image struct {
 		GalleryID       int
 		Filename        string
@@ -133,6 +140,7 @@ func (g Galleries) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Authorize
 	user := context.User(r.Context())
 	if gallery.UserID != user.ID {
 		http.Error(w, "You are not authorized to edit this gallery", http.
@@ -156,6 +164,7 @@ func (g Galleries) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Authorize
 	user := context.User(r.Context())
 	if gallery.UserID != user.ID {
 		http.Error(w, "You are not authorized to edit this gallery", http.
@@ -231,6 +240,30 @@ func (g Galleries) Image(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.ServeFile(w, r, image.Path)
+}
+
+func (g Galleries) DeleteImage(w http.ResponseWriter, r *http.Request) {
+	filename := chi.URLParam(r, "filename")
+	gallery, err := g.galleryByID(w, r)
+	if err != nil {
+		return
+	}
+
+	// Authorize
+	user := context.User(r.Context())
+	if gallery.UserID != user.ID {
+		http.Error(w, "You are not authorized to edit this gallery", http.
+			StatusForbidden)
+		return
+	}
+
+	err = g.GalleryService.DeleteImage(gallery.ID, filename)
+	if err != nil {
+		http.Error(w, "Something went wrong", http.StatusInternalServerError)
+		return
+	}
+	editPath := fmt.Sprintf("/galleries/%d/edit", gallery.ID)
+	http.Redirect(w, r, editPath, http.StatusFound)
 }
 
 // Helper function to avoid minor repetition across Edit, Update, Show and
