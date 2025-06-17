@@ -88,11 +88,15 @@ func (g Galleries) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (g Galleries) Edit(w http.ResponseWriter, r *http.Request) {
+	// All the code below is the same as in the Show handler
+	// apart from the Execute part.
 	gallery, err := g.galleryByID(w, r)
 	if err != nil {
 		return
 	}
 
+	// While I could pass the full Image model directly to the template,
+	// I'm creating a separate, simpler type specifically for the view.
 	type Image struct {
 		GalleryID       int
 		Filename        string
@@ -136,8 +140,6 @@ func (g Galleries) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// All previous code is the same with Edit. This part just updates
-	// the gallery.
 	gallery.Title = r.FormValue("title")
 	err = g.GalleryService.Update(gallery)
 	if err != nil {
