@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -168,6 +169,30 @@ func (service *GalleryService) Image(galleryID int, filename string) (Image,
 		GalleryID: galleryID,
 		Path:      imagePath,
 	}, nil
+}
+
+func (service *GalleryService) CreateImage(galleryID int, filename string,
+	contents io.Reader) error {
+	galleryDir := service.galleryDir(galleryID)
+	// MkdirAll is the equivalent of -p flag when you do mkdir -p dir1/dir2/dir3
+	// 0755 is the default permission
+	err := os.MkdirAll(galleryDir, 0755)
+	if err != nil {
+		return fmt.Errorf("creating gallery-%d images directory: %w", galleryID, err)
+	}
+
+	imagePath := filepath.Join(galleryDir, filename)
+	dst, err := os.Create(imagePath)
+	if err != nil {
+		return fmt.Errorf("creating image file: %w", err)
+	}
+	defer dst.Close()
+
+	_, err = io.Copy(dst, contents)
+	if err != nil {
+		return fmt.Errorf("copying contents to image: %w", err)
+	}
+	return nil
 }
 
 func (service *GalleryService) DeleteImage(galleryID int, filename string) error {
