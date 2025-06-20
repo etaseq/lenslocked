@@ -267,7 +267,9 @@ func (g Galleries) UploadImage(w http.ResponseWriter, r *http.Request) {
 
 	// "images" is the name of the field in the html form.
 	// So this is going to return all the file headers that were
-	// uploaded under the name "images" in the html form
+	// uploaded under the name "images" in the html form.
+	// NOTE: MultipartForm is the parsed multipart form, including file uploads.
+	// This field is only available after ParseMultipartForm is called.
 	fileHeaders := r.MultipartForm.File["images"]
 	for _, fileHeader := range fileHeaders {
 		file, err := fileHeader.Open()
